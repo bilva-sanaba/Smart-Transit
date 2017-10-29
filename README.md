@@ -7,9 +7,10 @@ An Alexa Skill for making environmentally sound decisions on transportation.
 The Skill is run through the Amazon Web Service. 
 The non-standard node modules used were firebase and @google/maps
 
-  npm install firebase
-  npm install @google/maps
-
+  ```npm install firebase
+     
+     npm install @google/maps
+```
 ## Usage
 The Skill has two main features storing your cars and calculating transportation costs.
 Variations of add new car <make> <model> <year> called <nickname> will register a car through your amazon device.
