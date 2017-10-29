@@ -46,14 +46,9 @@ function buildResponse(sessionAttributes, speechletResponse) {
 
 function getWelcomeResponse(callback) {
     // If we wanted to initialize the session to have some attributes we could add those here.
-    const sessionAttributes = session.attributes;
+    const sessionAttributes = {};
     const cardTitle = 'Welcome';
     const speechOutput = 'Welcome to the Alexa Smart Transit Skill.';
-    const userId = session.user.userId;
-    sessionAttributes['userId'] = userId;
-    sessionAttributes['consentToken'] = session.user.consentToken;
-    sessionAttributes['deviceId'] = session.device.deviceId;
-    session.attributes = sessionAttributes;
     // If the user either does not reply to the welcome message or says something that is not
     // understood, they will be prompted again with this text.
     const repromptText = 'Sorry I could not understand you. Please repeat what you said.';
@@ -81,10 +76,13 @@ function addCar(intent, session, callback) {
     const carModel = intent.slots.model;
     const carYear = intent.slots.year;
     let repromptText = '';
-    let sessionAttributes = session.attributes;
+    let sessionAttributes = {};
     const shouldEndSession = false;
     let speechOutput = '';
-    const userId = session.attributes.userId;
+    const userId = session.user.userId;
+    sessionAttributes['userId'] = userId;
+
+
     if (carMake && carModel && carYear) {
         const currentMake = carMake.value;
         const currentModel = carModel.value;
@@ -110,19 +108,20 @@ function costCalculator(intent, session, callback) {
     let currentModel;
     let currentYear;
     const repromptText = null;
-    const sessionAttributes = session.attributes;
-    deivceId = session.attributes.deviceId;
-    consentToken = session.attributes.consentToken;
+    const sessionAttributes = {};
 
     let shouldEndSession = false;
     let speechOutput = '';
-    const location = intent.slots.location.value;
+    const destination = intent.slots.destination.value;
     if (session.attributes) {
         currentMake = session.attributes.currentMake;
         currentModel = session.attributes.currentModel;
         currentYear = session.attributes.currentYear;
     }
-    sessionAttributes['location'] = location;
+    sessionAttributes['destination'] = destination;
+    sessionAttributes['currentMake'] =currentMake;
+    sessionAttributes['currentModel'] = currentModel;
+    sessionAttributes['currentYear'] =currentYear;
 
     if (currentMake) {
         speechOutput = `Your favorite color is ${currentMake}. Goodbye.`;
@@ -131,7 +130,6 @@ function costCalculator(intent, session, callback) {
         speechOutput = "I'm not sure what your favorite color is, you can say, my favorite color " +
             ' is red';
     }
-    session.attributes = sessionAttributes;
     // Setting repromptText to null signifies that we do not want to reprompt the user.
     // If the user does not respond or says something that is not understood, the session
     // will end.
