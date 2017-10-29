@@ -7,8 +7,8 @@ An Alexa Skill for making environmentally sound decisions on transportation.
 The Skill is run through the Amazon Web Service. 
 The non-standard node modules used were firebase and @google/maps
 
-  ```npm install firebase
-     
+  ```
+  npm install firebase
      npm install @google/maps
 ```
 ## Usage
