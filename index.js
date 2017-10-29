@@ -8,7 +8,7 @@
  * For additional samples, visit the Alexa Skills Kit Getting Started guide at
  * http://amzn.to/1LGWsLG
  */
-
+npm install google-distance-matrix
 
 // --------------- Helpers that build all of the responses -----------------------
 
@@ -116,13 +116,15 @@ function costCalculator(intent, session, callback) {
 
     let shouldEndSession = false;
     let speechOutput = '';
-    const location = intent.slots.location.value;
+    const destination = intent.slots.destination.value;
     if (session.attributes) {
         currentMake = session.attributes.currentMake;
         currentModel = session.attributes.currentModel;
         currentYear = session.attributes.currentYear;
     }
-    sessionAttributes['location'] = location;
+    sessionAttributes['destination'] = destination;
+    getDistance()
+
 
     if (currentMake) {
         speechOutput = `Your favorite color is ${currentMake}. Goodbye.`;
@@ -139,7 +141,53 @@ function costCalculator(intent, session, callback) {
          buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
 }
 
+function getDistance() {
+     // Google API Key: AIzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4
 
+    // https:maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=place_id:ChIJfzLrAbLmrIkRjaMc7lUWH7I&destinations=New+York+City,NY&key=AIzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4
+    // origins: Place ID: ChIJfzLrAbLmrIkRjaMc7lUWH7I   //Duke's place id
+    // destinations: Chapel Hill+USA
+    // mode: driving
+    // key: IzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4
+
+    
+    // var JsonResult =; //Google API Request
+    // var distance;
+    // for (var i = 0; i < JsonResult.length; i++) {
+
+
+    // }
+
+
+    var distance = require('google-distance-matrix');
+    var origins = ['36.0014258,-78.9404226'];
+    var destinations = ['35.9048967,-79.0495628'];
+    distance.key('IzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4');
+    distance.units('imperial');
+    distance.matrix(origins, destinations, function (err, distances) {
+        if (err) {
+            return console.log(err);
+        }
+        if(!distances) {
+            return console.log('no distances');
+        }
+        if (distances.status == 'OK') {
+            for (var i=0; i < origins.length; i++) {
+                for (var j = 0; j < destinations.length; j++) {
+                    var origin = distances.origin_addresses[i];
+                    var destination = distances.destination_addresses[j];
+                    if (distances.rows[0].elements[j].status == 'OK') {
+                        var distance = distances.rows[i].elements[j].distance.text;
+                        console.log('Distance from ' + origin + ' to ' + destination + ' is ' + distance);
+                        speechOutput = 'Distance from ' + origin + ' to ' + destination + ' is ' + distance;
+                    } else {
+                        console.log(destination + ' is not reachable by land from ' + origin);
+                    }
+                }
+            }
+        }
+    });
+    }
 // --------------- Events -----------------------
 
 /**
