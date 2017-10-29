@@ -13,7 +13,7 @@ var config = {
   };
 var app =firebase.initializeApp(config);
 
-
+var currentMPG = 25;
 
 var googleMapsClient = require('@google/maps').createClient({
   key: 'AIzaSyDgpV8_8Dy_Ir5Ah-v9dc39MksxxbAUWGM'
@@ -46,10 +46,9 @@ var handlers = {
         
         // If the user either does not reply to the welcome message or says something that is not
         // understood, they will be prompted again with this text.
-        this.attributes['speechOutput'] = 'Welcome to ' + SKILL_NAME + '. You can add a car to your list of vehicles or ask a question like ' + 
-        'how much does it cost to get from Duke to Chapel Hill?';
+        this.attributes['speechOutput'] = 'Welcome to ' + SKILL_NAME;
 
-        this.attributes['repromptSpeech'] = 'Ask a question like, how much does it cost to get from Duke to Chapel Hill?';
+        this.attributes['repromptSpeech'] = 'Ask how to get to your destination?';
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
     
     },
@@ -62,12 +61,34 @@ var handlers = {
                 self.emit('Unhandled')
             }
             else{
-                initMap(distSlot1).then(function(result){
-
-                    self.emit(':tell', result);
+                initMap(distSlot1,"driving").then(function(result){
+                    var gasprice = 2.50;
+                    var distance = parseFloat(result[0]);
+                    var time = result[1];
+                    var priceToTravel = (gasprice*distance)/currentMPG;
+                    var carbonEmissions = (distance*18.9)/currentMPG;
+                    console.log(gasprice);
+                    console.log(distance);
+                    console.log(time);
+                    console.log(priceToTravel);
+                    console.log(carbonEmissions);
+                    self.emit(':tell', " Driving to " + distSlot1 + " would take " + time + ", cost " + priceToTravel.toFixed(2) + " dollars and emmit " + carbonEmissions.toFixed(2) + " pounds of carbon dioxide");
                 });
+
             }
         }
+    },
+    'chooseCar' : function(){
+        var storedName = this.event.request.intent.slots.nickname.value;
+        //var id = this.event.session.user.userId.value;
+        var id = "Global ID";
+        if(storedName!=undefined && id!=undefined){
+        currentMPG= getCar(id,storedName);
+            this.emit(':tell',  'Selected your car');
+        }else{
+            this.emit(':tell',  'Could not find this car. Did you save it as something else?');
+        }
+
     },
 
 
@@ -75,17 +96,33 @@ var handlers = {
     var carMake = this.event.request.intent.slots.make.value;
     var carModel = this.event.request.intent.slots.model.value;
     var carYear = this.event.request.intent.slots.year.value;
+     var storedName = this.event.request.intent.slots.nickname.value;
+     //var id = this.event.system.context.user.userId.value;
+     var id = "Global ID"
 
-     if(carMake!=undefined && carModel!=undefined && carYear!=undefined){
-        promiseMPG(carMake,carModel,carYear).then(function(x){
-            this.emit(':tell',x);
-        });
+     if(carMake!=undefined && carModel!=undefined && carYear!=undefined && storedName!=undefined){
+        addCar(id,carMake,carModel,carYear,storedName);
+        // promiseMPG(carMake,carModel,carYear).then(function(x){
+        //     this.emit(':tell',x);
+        // });
+        
+
+        this.emit(':tell',  'Added your car');
+
+
+
+
+
+
+
+
+
+        // getPromiseCar(carMake,carModel).then(function(car){
+        //     this.emit(':tell', car);
+        // });
 
          
-
-        // speechOutput = `Your car is the ${currentYear} ${currentMake} ${currentModel}. You can ask me ` +
-        //     "your favorite color by saying, what's my favorite color?";
-        // repromptText = "Thanks for adding a car! You can add another by saying add new car";
+    
 
 
 
@@ -94,12 +131,10 @@ var handlers = {
 
 
     } else {
-        // speechOutput = "I'm not sure what your mean. Please try again.";
-        // repromptText = "I'm not sure what you mean. Please try again.";
-         this.emit(':tell',"you fucked up");
+          this.emit(':tell',  'Please try again');
     }
 }
-,
+,   
 
     'AMAZON.HelpIntent': function() {
         console.log("went in Amazon.HelpIntent");
@@ -150,21 +185,28 @@ function getMPG(make, model, year){
 
 
 function getCar(userId,name){
-  userId=userId.toLowerCase();
+    getPromiseCar(userId,name).then(function(car){
+         return car;
+    });
+}
+function getPromiseCar(userId,name){
+     var p1 = new Promise( (resolve, reject) => {
+          userId=userId.toLowerCase();
   var query = firebase.database().ref("/Personal Cars").orderByKey();
   query.once("value").then(function(data){
     data.forEach(function(id){
-
       if (id.key.toLowerCase()==userId){
         var myCars = id.val();
          for (var i=0;i<myCars.length;i++){
           if (myCars[i].Name.toLowerCase()==name.toLowerCase()){
-            return myCars[i].MPG;
+            resolve(myCars[i].MPG);
           }
          }
       }
     });
   });
+    });
+    return p1;
 }
 
 
@@ -174,7 +216,8 @@ function getCar(userId,name){
 function addCar(id, make, model, year, name){
         promiseMPG(make,model,year).then(function(mpg){
                        addCustomCar(id,name,mpg);
-        })
+                       currentMPG=mpg;
+        });
 
 }
 
@@ -221,7 +264,7 @@ function promiseMPG(make,model,year){
 function promiseNumberOfCars(id){
   var p1 = new Promise( (resolve, reject) => {
     var query = firebase.database().ref('/Personal Cars/' + id);
-    count = 0;
+    var count = 0;
     resolve(count++);
     query.once("value").then(function(data) { 
       data.forEach(function(x){
@@ -235,14 +278,14 @@ function promiseNumberOfCars(id){
   return p1;
 }
 
- function initMap(destination) {
+ function initMap(destination,modeOfTransport) {
         var p1 = new Promise((resolve, reject) => {
         var origin1 = "Durham, NC";
         var destinationB = destination;
         googleMapsClient.distanceMatrix({
           origins: [origin1],
           destinations: [destinationB],
-          mode: 'driving',
+          mode: modeOfTransport,
           units: 'imperial',
           //avoid:"highways",
           //avoid:"tolls"
@@ -250,11 +293,10 @@ function promiseNumberOfCars(id){
 
         function(err, response) {
   if (!err) {
-    resolve(response.json.rows[0].elements[0].distance.text);
+    resolve([response.json.rows[0].elements[0].distance.text,response.json.rows[0].elements[0].duration.text]);
   }});
         
       } );
       return p1
   }
-
 
