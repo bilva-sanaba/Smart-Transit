@@ -1,280 +1,297 @@
 'use strict';
 
-/**
- * This sample demonstrates a simple skill built with the Amazon Alexa Skills Kit.
- * The Intent Schema, Custom Slots, and Sample Utterances for this skill, as well as
- * testing instructions are located at http://amzn.to/1LzFrj6
- *
- * For additional samples, visit the Alexa Skills Kit Getting Started guide at
- * http://amzn.to/1LGWsLG
- */
-npm install google-distance-matrix
+var Alexa = require('alexa-sdk');
+var GoogleMapsAPI = require('googlemaps');
+var firebase = require('firebase');
+var config = {
+    apiKey: "AIzaSyDJQFS1YVoBNJNmJgk536UAqZEdA6H818c",
+    authDomain: "smart-transit.firebaseapp.com",
+    databaseURL: "https://smart-transit.firebaseio.com",
+    projectId: "smart-transit",
+    storageBucket: "",
+    messagingSenderId: "174393858511"
+  };
+var app =firebase.initializeApp(config);
 
-// --------------- Helpers that build all of the responses -----------------------
+var currentMPG = 25;
 
-function buildSpeechletResponse(title, output, repromptText, shouldEndSession) {
-    return {
-        outputSpeech: {
-            type: 'PlainText',
-            text: output,
-        },
-        card: {
-            type: 'Simple',
-            title: `SessionSpeechlet - ${title}`,
-            content: `SessionSpeechlet - ${output}`,
-        },
-        reprompt: {
-            outputSpeech: {
-                type: 'PlainText',
-                text: repromptText,
-            },
-        },
-        shouldEndSession,
-    };
-}
+var googleMapsClient = require('@google/maps').createClient({
+  key: 'AIzaSyDgpV8_8Dy_Ir5Ah-v9dc39MksxxbAUWGM'
+});
 
-function buildResponse(sessionAttributes, speechletResponse) {
-    return {
-        version: '1.0',
-        sessionAttributes,
-        response: speechletResponse,
-    };
-}
+var APP_ID = 'amzn1.ask.skill.2044e42b-de5b-4195-99e5-12294a464665'; //OPTIONAL: replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
+var SKILL_NAME = 'Smart Transit';
 
+var publicConfig = {
+    key: 'AIzaSyDgpV8_8Dy_Ir5Ah-v9dc39MksxxbAUWGM',
+    stagger_time:       100, // for elevationPath
+    encode_polylines:   false,
+    secure:             true, // use https
+    //  proxy:              'http://127.0.0.1:9999' // optional, set a proxy for HTTP requests
+};
 
-// --------------- Functions that control the skill's behavior -----------------------
+var gmAPI = new GoogleMapsAPI(publicConfig);
 
-function getWelcomeResponse(callback) {
-    // If we wanted to initialize the session to have some attributes we could add those here.
-    const sessionAttributes = {};
-    const cardTitle = 'Welcome';
-    const speechOutput = 'Welcome to the Alexa Smart Transit Skill.';
-    // If the user either does not reply to the welcome message or says something that is not
-    // understood, they will be prompted again with this text.
-    const repromptText = 'Sorry I could not understand you. Please repeat what you said.';
-    const shouldEndSession = false;
+exports.handler = function(event, context, callback) {
+    var alexa = Alexa.handler(event, context);
+    alexa.APP_ID = APP_ID;
+    alexa.registerHandlers(handlers);
+    alexa.execute();
+};
 
-    callback(sessionAttributes,
-        buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
-}
+var handlers = {
+    'LaunchRequest': function () {
+        console.log("went in newsession function");
+//        this.emit('GetDistance');
+        
+        // If the user either does not reply to the welcome message or says something that is not
+        // understood, they will be prompted again with this text.
+        this.attributes['speechOutput'] = 'Welcome to ' + SKILL_NAME;
 
-function handleSessionEndRequest(callback) {
-    const cardTitle = 'Session Ended';
-    const speechOutput = 'Thank you for using the Alexa Smart Transit Skill. Have a nice day!';
-    // Setting this to true ends the session and exits the skill.
-    const shouldEndSession = true;
-
-    callback({}, buildSpeechletResponse(cardTitle, speechOutput, null, shouldEndSession));
-}
-
-/**
- * Sets the color in the session and prepares the speech to reply to the user.
- */
-function addCar(intent, session, callback) {
-    const cardTitle = intent.name;
-    const carMake = intent.slots.make;
-    const carModel = intent.slots.model;
-    const carYear = intent.slots.year;
-    let repromptText = '';
-    let sessionAttributes = {};
-    const shouldEndSession = false;
-    let speechOutput = '';
-    const userId = session.user.userId;
-    sessionAttributes['userId'] = userId;
-
-
-    if (carMake && carModel && carYear) {
-        const currentMake = carMake.value;
-        const currentModel = carModel.value;
-        const currentYear = carYear.value;
-        sessionAttributes['currentMake'] =currentMake;
-        sessionAttributes['currentModel'] = currentModel;
-        sessionAttributes['currentYear'] =currentYear;
-
-        speechOutput = `Your car is the ${currentYear} ${currentMake} ${currentModel}. You can ask me ` +
-            "your favorite color by saying, what's my favorite color?";
-        repromptText = "Thanks for adding a car! You can add another by saying add new car";
-    } else {
-        speechOutput = "I'm not sure what your mean. Please try again.";
-        repromptText = "I'm not sure what you mean. Please try again.";
-    }
-
-    callback(sessionAttributes,
-         buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
-}
-
-function costCalculator(intent, session, callback) {
-    let currentMake;
-    let currentModel;
-    let currentYear;
-    const repromptText = null;
-    const sessionAttributes = {};
-
-    let shouldEndSession = false;
-    let speechOutput = '';
-    const destination = intent.slots.destination.value;
-    if (session.attributes) {
-        currentMake = session.attributes.currentMake;
-        currentModel = session.attributes.currentModel;
-        currentYear = session.attributes.currentYear;
-    }
-    sessionAttributes['destination'] = destination;
-    sessionAttributes['currentMake'] =currentMake;
-    sessionAttributes['currentModel'] = currentModel;
-    sessionAttributes['currentYear'] =currentYear;
-    getDistance()                                               /// merge conflict
-
-    if (currentMake) {
-        speechOutput = `Your favorite color is ${currentMake}. Goodbye.`;
-        shouldEndSession = true;
-    } else {
-        speechOutput = "I'm not sure what your favorite color is, you can say, my favorite color " +
-            ' is red';
-    }
-    // Setting repromptText to null signifies that we do not want to reprompt the user.
-    // If the user does not respond or says something that is not understood, the session
-    // will end.
-    callback(sessionAttributes,
-         buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
-}
-
-function getDistance() {
-     // Google API Key: AIzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4
-
-    // https:maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=place_id:ChIJfzLrAbLmrIkRjaMc7lUWH7I&destinations=New+York+City,NY&key=AIzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4
-    // origins: Place ID: ChIJfzLrAbLmrIkRjaMc7lUWH7I   //Duke's place id
-    // destinations: Chapel Hill+USA
-    // mode: driving
-    // key: IzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4
-
+        this.attributes['repromptSpeech'] = 'Ask how to get to your destination?';
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
     
-    // var JsonResult =; //Google API Request
-    // var distance;
-    // for (var i = 0; i < JsonResult.length; i++) {
+    },
+    'costCalculator': function () {
+        if(this.event.request.intent.slots.destination.value!=undefined){
+            var self = this;
+            var distSlot1 = this.event.request.intent.slots.destination.value; 
+            var distSlot2 = "Duke University"; 
+            if(distSlot1==undefined || distSlot2==undefined){
+                self.emit('Unhandled')
+            }
+            else{
+                initMap(distSlot1,"driving").then(function(result){
+                    var gasprice = 2.50;
+                    var distance = parseFloat(result[0]);
+                    var time = result[1];
+                    var priceToTravel = (gasprice*distance)/currentMPG;
+                    var carbonEmissions = (distance*18.9)/currentMPG;
+                    self.emit(':tell', " Driving to " + distSlot1 + " would take " + time + ", cost " + priceToTravel.toFixed(2) + " dollars and emmit " + carbonEmissions.toFixed(2) + " pounds of carbon dioxide");
+                });
 
-
-    // }
-
-
-    var distance = require('google-distance-matrix');
-    var origins = ['36.0014258,-78.9404226'];
-    var destinations = ['35.9048967,-79.0495628'];
-    distance.key('IzaSyCyFRE4TJ1V0lUBGEQM_1FCzR7Mrxmxnk4');
-    distance.units('imperial');
-    distance.matrix(origins, destinations, function (err, distances) {
-        if (err) {
-            return console.log(err);
-        }
-        if(!distances) {
-            return console.log('no distances');
-        }
-        if (distances.status == 'OK') {
-            for (var i=0; i < origins.length; i++) {
-                for (var j = 0; j < destinations.length; j++) {
-                    var origin = distances.origin_addresses[i];
-                    var destination = distances.destination_addresses[j];
-                    if (distances.rows[0].elements[j].status == 'OK') {
-                        var distance = distances.rows[i].elements[j].distance.text;
-                        console.log('Distance from ' + origin + ' to ' + destination + ' is ' + distance);
-                        speechOutput = 'Distance from ' + origin + ' to ' + destination + ' is ' + distance;
-                    } else {
-                        console.log(destination + ' is not reachable by land from ' + origin);
-                    }
-                }
             }
         }
-    });
-    }
-// --------------- Events -----------------------
+    },
+    'chooseCar' : function(){
+        var storedName = this.event.request.intent.slots.nickname.value;
+        //var id = this.event.session.user.userId.value;
+        var id = "Global ID";
+        if(storedName!=undefined && id!=undefined){
+        currentMPG= getCar(id,storedName);
+            this.emit(':tell',  'Selected your car');
+        }else{
+            this.emit(':tell',  'Could not find this car. Did you save it as something else?');
+        }
 
-/**
- * Called when the session starts.
- */
-function onSessionStarted(sessionStartedRequest, session) {
-    console.log(`onSessionStarted requestId=${sessionStartedRequest.requestId}, sessionId=${session.sessionId}`);
-}
+    },
 
-/**
- * Called when the user launches the skill without specifying what they want.
- */
-function onLaunch(launchRequest, session, callback) {
-    console.log(`onLaunch requestId=${launchRequest.requestId}, sessionId=${session.sessionId}`);
 
-    // Dispatch to your skill's launch.
-    getWelcomeResponse(callback);
-}
+    'addCar': function() {
+    var carMake = this.event.request.intent.slots.make.value;
+    var carModel = this.event.request.intent.slots.model.value;
+    var carYear = this.event.request.intent.slots.year.value;
+     var storedName = this.event.request.intent.slots.nickname.value;
+     //var id = this.event.system.context.user.userId.value;
+     var id = "Global ID"
 
-/**
- * Called when the user specifies an intent for this skill.
- */
-function onIntent(intentRequest, session, callback) {
-    console.log(`onIntent requestId=${intentRequest.requestId}, sessionId=${session.sessionId}`);
+     if(carMake!=undefined && carModel!=undefined && carYear!=undefined && storedName!=undefined){
+        addCar(id,carMake,carModel,carYear,storedName);
+        // promiseMPG(carMake,carModel,carYear).then(function(x){
+        //     this.emit(':tell',x);
+        // });
+        
 
-    const intent = intentRequest.intent;
-    const intentName = intentRequest.intent.name;
-    // Dispatch to your skill's intent handlers
-    if (intentName === 'addCar') {
-        addCar(intent, session, callback);
-    } else if (intentName === 'costCalculator') {
-        costCalculator(intent, session, callback);
-    } else if (intentName === 'AMAZON.HelpIntent') {
-        getWelcomeResponse(callback);
-    } else if (intentName === 'AMAZON.StopIntent' || intentName === 'AMAZON.CancelIntent') {
-        handleSessionEndRequest(callback);
+        this.emit(':tell',  'Added your car');
+
+
+
+
+
+
+
+
+
+        // getPromiseCar(carMake,carModel).then(function(car){
+        //     this.emit(':tell', car);
+        // });
+
+         
+    
+
+
+
+
+
+
+
     } else {
-        throw new Error('Invalid intent');
+          this.emit(':tell',  'Please try again');
     }
 }
+,   
 
-/**
- * Called when the user ends the session.
- * Is not called when the skill returns shouldEndSession=true.
- */
-function onSessionEnded(sessionEndedRequest, session) {
-    console.log(`onSessionEnded requestId=${sessionEndedRequest.requestId}, sessionId=${session.sessionId}`);
-    // Add cleanup logic here
-}
-
-
-// --------------- Main handler -----------------------
-
-// Route the incoming request based on type (LaunchRequest, IntentRequest,
-// etc.) The JSON body of the request is provided in the event parameter.
-exports.handler = (event, context, callback) => {
-    try {
-        console.log(`event.session.application.applicationId=${event.session.application.applicationId}`);
-
-        /**
-         * Uncomment this if statement and populate with your skill's application ID to
-         * prevent someone else from configuring a skill that sends requests to this function.
-         */
-        /*
-        if (event.session.application.applicationId !== 'amzn1.echo-sdk-ams.app.[unique-value-here]') {
-             callback('Invalid Application ID');
-        }
-        */
-
-        if (event.session.new) {
-            onSessionStarted({ requestId: event.request.requestId }, event.session);
-        }
-
-        if (event.request.type === 'LaunchRequest') {
-            onLaunch(event.request,
-                event.session,
-                (sessionAttributes, speechletResponse) => {
-                    callback(null, buildResponse(sessionAttributes, speechletResponse));
-                });
-        } else if (event.request.type === 'IntentRequest') {
-            onIntent(event.request,
-                event.session,
-                (sessionAttributes, speechletResponse) => {
-                    callback(null, buildResponse(sessionAttributes, speechletResponse));
-                });
-        } else if (event.request.type === 'SessionEndedRequest') {
-            onSessionEnded(event.request, event.session);
-            callback();
-        }
-    } catch (err) {
-        callback(err);
+    'AMAZON.HelpIntent': function() {
+        console.log("went in Amazon.HelpIntent");
+        // If the user either does not reply to the welcome message or says something that is not
+        // understood, they will be prompted again with this text.
+        this.attributes['speechOutput'] = 'You can ask a question like, what is the ' +
+            'distance from Seattle to Portland? Please tell me two cities you would like to find a driving distance between.';
+        this.attributes['repromptSpeech'] = 'You can ask a question like, what is the ' +
+            'distance from Seattle to Portland? Please tell me two cities you would like to find a driving distance between.';
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
+    },
+    'AMAZON.StopIntent': function () {
+        this.emit('SessionEndedRequest');
+    },
+    'AMAZON.CancelIntent': function () {
+        this.emit('SessionEndedRequest');
+    },
+    'SessionEndedRequest':function () {
+        this.emit(':tell', 'Goodbye!');
+    },
+    'Unhandled': function() {
+        this.emit(':tell', 'Sorry, I was unable to understand and process your request. Please try again.');
+        this.emit('SessionEndedRequest');
+    },
+    'HelpMe': function() {
+        console.log("went in HelpMe");
+        this.attributes['speechOutput'] = 'You can ask a question like, what is the ' +
+            'distance from Atlanta to Boston? Please tell me two cities you would like to find a driving distance between.';
+        this.attributes['repromptSpeech'] = 'You can ask a question like, what is the ' +
+            'distance from Atlanta to Boston? Please tell me two cities you would like to find a driving distance between.';
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
     }
 };
+
+
+
+
+
+
+
+
+
+function getMPG(make, model, year){
+  promiseMPG(make,model,year).then(function(mpg){
+    return mpg;
+  });
+}
+
+
+function getCar(userId,name){
+    getPromiseCar(userId,name).then(function(car){
+         return car;
+    });
+}
+function getPromiseCar(userId,name){
+     var p1 = new Promise( (resolve, reject) => {
+          userId=userId.toLowerCase();
+  var query = firebase.database().ref("/Personal Cars").orderByKey();
+  query.once("value").then(function(data){
+    data.forEach(function(id){
+      if (id.key.toLowerCase()==userId){
+        var myCars = id.val();
+         for (var i=0;i<myCars.length;i++){
+          if (myCars[i].Name.toLowerCase()==name.toLowerCase()){
+            resolve(myCars[i].MPG);
+          }
+         }
+      }
+    });
+  });
+    });
+    return p1;
+}
+
+
+
+//Takes a user ID, car name, car attributes, and stores to firebase 
+//format of store is id { name: mpg}
+function addCar(id, make, model, year, name){
+        promiseMPG(make,model,year).then(function(mpg){
+                       addCustomCar(id,name,mpg);
+                       currentMPG=mpg;
+        });
+
+}
+
+function addCustomCar(id, name, mpg){
+                       promiseNumberOfCars(id).then(function(numberOfCars){
+                        if (numberOfCars!=0){
+                          var setting = firebase.database().ref('/Personal Cars/' + id+"/"+numberOfCars).set({
+                              Name:name,
+                              MPG:mpg
+                          });
+                        }else{
+                          var updateObject = {
+                              Name: name,
+                              MPG: mpg
+                            };
+                            var setting = firebase.database().ref('/Personal Cars/' + id+"/").set({
+                              0 : updateObject
+                          });
+                        }
+  
+                        });  
+
+}
+
+function promiseMPG(make,model,year){
+  var p1 = new Promise( (resolve, reject) => {
+    var query = firebase.database().ref("/Cars").orderByKey();
+  query.once("value").then(function(data) { 
+    data.forEach(function(company) {
+              if (make.toLowerCase()==company.key.toLowerCase()){
+                var myCars= company.val();
+                for (var i=0; i<myCars.length;i++){
+                  if (myCars[i].Model.toLowerCase()==model.toLowerCase() && myCars[i].Year==year){
+                    resolve(myCars[i].MPG);
+                  }
+                }
+              }
+            });
+  });
+  } );
+  return p1;
+}
+
+function promiseNumberOfCars(id){
+  var p1 = new Promise( (resolve, reject) => {
+    var query = firebase.database().ref('/Personal Cars/' + id);
+    var count = 0;
+    resolve(count++);
+    query.once("value").then(function(data) { 
+      data.forEach(function(x){
+        count++;
+        resolve(count++);
+      });
+
+  });
+
+});
+  return p1;
+}
+
+ function initMap(destination,modeOfTransport) {
+        var p1 = new Promise((resolve, reject) => {
+        var origin1 = "Durham, NC";
+        var destinationB = destination;
+        googleMapsClient.distanceMatrix({
+          origins: [origin1],
+          destinations: [destinationB],
+          mode: modeOfTransport,
+          units: 'imperial',
+          //avoid:"highways",
+          //avoid:"tolls"
+        }, 
+
+        function(err, response) {
+  if (!err) {
+    resolve([response.json.rows[0].elements[0].distance.text,response.json.rows[0].elements[0].duration.text]);
+  }});
+        
+      } );
+      return p1
+  }
+
