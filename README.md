@@ -38,6 +38,8 @@ View the Sample Statements.txt file for more options.
 3. Commit your changes: `git commit -am 'Add some feature'`
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request :D
+  ### Future Ideas
+  For groups considering similar ideas some extensions we thought of include (1) syncing to various calendar APIs, (2) providing various ways to specify MPG rather than using the EPA rates, (3) a more extendable audio front end without using AWS.  
 
 ## Credits
 Authors: Bilva Sanaba, Teddy Ruby, Justin Ledinh
