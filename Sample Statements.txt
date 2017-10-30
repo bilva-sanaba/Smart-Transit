@@ -1,0 +1,33 @@
+Sample Statements
+
+--Session 1
+Alexa, ask Smart Transit
+	->"Welcome to Smart Transit"
+
+Add a new car 2002 Honda Civic called John's Car
+	->"Added your car"
+	->Stores John's Car with your Echo ID and finds it's MPG through an EPA listing
+
+Add a new car 2008 Nissan Altima called Mary's Car
+	->"Added your car"
+	->Stores Mary's Car with your Echo ID and finds it's MPG through an EPA listing
+
+Choose John's Car
+	-> "Chose John's car"
+	->Selects John's Car as the car to perform other methods with
+
+What is the best way to get to San Francisco?
+	-> "Driving to San Francisco would take x hours, cost x dollar in gas, and emit 20 pounds of Carbon Dioxide. On the other hand, biking would take y hours."
+	->Tells you the time, price, and emission of driving to San Francisco using John's Car
+
+--Session 2 (with same echo)
+Alexa, ask Smart Transit
+	->"Welcome to Smart Transit"
+
+Choose Mary's Car
+	-> "Chose Mary's car"
+	->Selects Mary's Car as the car to perform other methods with
+
+What is the best way to get to Raleigh?
+	-> "Driving to San Raleigh would take x hours, cost x dollar in gas, and emit 20 pounds of Carbon Dioxide. On the other hand, biking would take y hours."
+	->Tells you the time, price, and emission of driving to Raleigh using Mary's car.

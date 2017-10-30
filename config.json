@@ -1,0 +1,9 @@
+{
+    "apiKey": "firebase api key",
+    "authDomain": "firebase database domain",
+    "databaseURL": "firebase auth domain",
+    "projectId": "firebase project id",
+    "storageBucket": "firebase storage bucket",
+    "messagingSenderId": "firebase messaging sender Id",
+    "googleAPIKey" : "Google Maps API Key"
+}
