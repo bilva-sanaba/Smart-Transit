@@ -1,14 +1,25 @@
-# Hack Duke
+# Smart Transit
 
-TODO: Write a project description
+An Alexa Skill for making environmentally sound decisions on transportation.
 
 ## Installation
 
-TODO: Describe the installation process
+The Skill is run through the Amazon Web Service. 
+The non-standard node modules used were firebase and @google/maps
 
+  ```
+  npm install firebase
+     npm install @google/maps
+```
 ## Usage
+The Skill has two main features storing your cars and calculating transportation costs.
+Variations of add new car <make> <model> <year> called <nickname> will register a car through your amazon device.
+Ex. Alexa, add a new Hyundai Elantra 2014 called My Car
 
-TODO: Write usage instructions
+Variations of whats the best way to get to <destination> 
+Ex. Alexa, what is the best way to get to Duke
+Alexa replies with various options based on your location, telling you the time required, emmisions generated, and cost of transportation.
+
 
 ## Contributing
 
@@ -18,14 +29,6 @@ TODO: Write usage instructions
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request :D
 
-## History
-
-TODO: Write history
 
 ## Credits
-
-TODO: Write credits
-
-## License
-
-TODO: Write license
+Authors: Bilva Sanaba, Teddy Ruby, Justin Ledinh
